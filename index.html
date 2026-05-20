@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>리더십 강의 제안서 편집기</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f1f5f9;
+        }
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                background-color: #ffffff;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .print-page-break {
+                page-break-before: always;
+            }
+            .print-shadow-none {
+                box-shadow: none !important;
+                border: none !important;
+            }
+            /* Hide editing guides during print */
+            .editable-active {
+                outline: none !important;
+                background-color: transparent !important;
+                box-shadow: none !important;
+            }
+        }
+        /* Custom styles for interactive editing */
+        .editable-active {
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        .editable-active:hover {
+            background-color: rgba(239, 246, 255, 0.8);
+            outline: 2px dashed #6366f1;
+            outline-offset: 4px;
+            cursor: pointer;
+        }
+        .editable-active:focus {
+            background-color: #ffffff;
+            outline: 2px solid #4f46e5;
+            outline-offset: 4px;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+        }
+        /* Placeholder styling for empty contenteditable */
+        [contenteditable="true"]:empty:before {
+            content: attr(placeholder);
+            color: #cbd5e1;
+            display: block;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased leading-relaxed pb-20">
+
+    <!-- Action Control Bar (Screen Only) -->
+    <div class="no-print sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 py-3 px-4 shadow-md transition-all">
+        <div class="max-w-4xl mx-auto flex flex-col sm:flex-row gap-3 justify-between items-center">
+            <div class="flex items-center gap-3">
+                <span class="text-lg">📄</span>
+                <div>
+                    <h1 class="text-sm font-bold text-slate-800 leading-tight">리더십 강의 제안서 스마트 편집기</h1>
+                    <div class="flex items-center gap-1.5 mt-0.5">
+                        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span id="save-status" class="text-[11px] text-slate-500 font-medium">자동 저장 활성화됨</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-2">
+                <!-- Toggle Edit Mode Button -->
+                <button id="btn-toggle-edit" onclick="toggleEditMode()" class="bg-slate-800 hover:bg-slate-700 text-white font-medium text-xs py-2 px-3.5 rounded-lg shadow-sm transition-all flex items-center gap-1.5">
+                    <span id="edit-icon">👁️</span>
+                    <span id="edit-text">미리보기 모드</span>
+                </button>
+                
+                <!-- Reset Button -->
+                <button onclick="showResetModal()" class="border border-slate-200 hover:bg-slate-50 text-slate-600 font-medium text-xs py-2 px-3.5 rounded-lg transition-all flex items-center gap-1.5">
+                    <span>🔄</span>
+                    초기화
+                </button>
+                
+                <!-- Print/PDF Button -->
+                <button onclick="triggerPrint()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs py-2 px-4 rounded-lg shadow-sm transition-all flex items-center gap-1.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4" />
+                    </svg>
+                    PDF 저장 / 인쇄
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Mode Tutorial Toast (Screen Only) -->
+    <div id="edit-tutorial" class="no-print max-w-4xl mx-auto mt-4 px-4">
+        <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3.5 flex items-start gap-3">
+            <span class="text-lg">💡</span>
+            <p class="text-xs text-indigo-900 leading-relaxed">
+                현재 <strong>편집 모드</strong>가 활성화되어 있습니다. 문서 안의 텍스트를 마우스로 클릭하여 자유롭게 내용을 바꾸어 보세요. 변경사항은 자동으로 브라우저에 저장됩니다. 수정을 모두 끝마친 후 상단의 <strong>[미리보기 모드]</strong>로 전환하여 깔끔해진 레이아웃을 확인해 보세요!
+            </p>
+        </div>
+    </div>
+
+    <!-- Main Proposal Document Container -->
+    <div id="proposal-paper" class="max-w-4xl mx-auto my-6 p-6 sm:p-12 bg-white rounded-2xl border border-slate-200 shadow-xl print-shadow-none transition-all">
+        
+        <!-- Header / Cover Section -->
+        <header class="border-b-4 border-indigo-600 pb-8 mb-10 text-center sm:text-left relative">
+            <div class="inline-block bg-indigo-50 text-indigo-700 font-bold text-xs uppercase tracking-wider px-3 py-1 rounded-full mb-3 editable" placeholder="프로그램 분류 입력" id="doc-badge">
+                초등학교 학생회 임원 역량 강화 프로그램
+            </div>
+            <h1 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-snug mb-3 editable" placeholder="강의 제목 입력" id="doc-title">
+                슈링클스로 시각화하는 나의 리더십 버킷리스트
+            </h1>
+            <p class="text-slate-500 text-lg font-light editable" placeholder="서브타이틀 또는 기획 의도 한줄평 입력" id="doc-subtitle">
+                나의 큰 꿈을 손으로 그리고 구워내며 '단단한 비전'으로 압축하는 체험형 리더십 강의
+            </p>
+        </header>
+
+        <!-- Section: 제안 의도 및 기획 배경 -->
+        <section class="mb-12">
+            <div class="flex items-center gap-2 mb-4">
+                <span class="p-1.5 bg-indigo-100 rounded-lg text-indigo-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd" />
+                    </svg>
+                </span>
+                <h2 class="text-xl font-bold text-slate-900 editable" placeholder="섹션 제목" id="section1-title">제안 의도 및 기획 배경</h2>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-xl border border-slate-100">
+                <div class="space-y-3">
+                    <h3 class="font-bold text-indigo-900 text-base editable" placeholder="배경 타이틀 1" id="section1-sub1">왜 '비전(버킷리스트)'인가?</h3>
+                    <div class="text-sm text-slate-600 leading-relaxed editable" placeholder="내용 입력" id="section1-content1">
+                        초등학교 시기의 리더십은 뛰어난 기술보다는 <strong>'목표 의식(비전)'</strong>을 가지고 솔선수범하는 태도에서 시작됩니다. 미래의 방향성을 담은 <span class="underline decoration-indigo-400 decoration-2 font-semibold">5가지 개별 버킷리스트</span>를 세워 스스로 삶을 이끌어갈 내적 동기를 부여합니다.
+                    </div>
+                </div>
+                <div class="space-y-3 border-t md:border-t-0 md:border-l border-slate-200 pt-4 md:pt-0 md:pl-6">
+                    <h3 class="font-bold text-orange-600 text-base editable" placeholder="배경 타이틀 2" id="section1-sub2">왜 '슈링클스 공예'인가?</h3>
+                    <div class="text-sm text-slate-600 leading-relaxed editable" placeholder="내용 입력" id="section1-content2">
+                        커다란 마술 종이(슈링클스)가 오븐의 열기를 견디며 1/7 크기의 단단하고 영롱한 플라스틱 키링으로 수축·압축되는 현상을 직접 체험합니다. 이를 통해 <strong>"뜨거운 노력과 실행력을 거쳐 내 삶의 흔들리지 않는 단단한 비전을 남긴다"</strong>는 리더십 메시지를 시각적·촉각적으로 습득합니다.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: 교육 개요 요약 -->
+        <section class="mb-12">
+            <div class="flex items-center gap-2 mb-4">
+                <span class="p-1.5 bg-indigo-100 rounded-lg text-indigo-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
+                    </svg>
+                </span>
+                <h2 class="text-xl font-bold text-slate-900 editable" placeholder="섹션 제목" id="section2-title">교육 개요</h2>
+            </div>
+            
+            <div class="border border-slate-100 rounded-xl overflow-hidden shadow-sm">
+                <table class="w-full text-left border-collapse">
+                    <tbody>
+                        <tr class="border-b border-slate-100 bg-slate-50/50">
+                            <th class="w-1/4 py-3.5 px-4 text-sm font-semibold text-slate-600 editable" placeholder="표 항목 1" id="table-th1">교육 대상</th>
+                            <td class="py-3.5 px-4 text-sm text-slate-800 editable" placeholder="표 내용 1" id="table-td1">초등학교 학생회 임원 (추천 인원: 15명)</td>
+                        </tr>
+                        <tr class="border-b border-slate-100">
+                            <th class="py-3.5 px-4 text-sm font-semibold text-slate-600 editable" placeholder="표 항목 2" id="table-th2">소요 시간</th>
+                            <td class="py-3.5 px-4 text-sm text-slate-800 editable" placeholder="표 내용 2" id="table-td2">총 3차시 (차시당 40~50분, 총 120~150분 분량)</td>
+                        </tr>
+                        <tr class="border-b border-slate-100 bg-slate-50/50">
+                            <th class="py-3.5 px-4 text-sm font-semibold text-slate-600 editable" placeholder="표 항목 3" id="table-th3">핵심 역량</th>
+                            <td class="py-3.5 px-4 text-sm text-slate-800 editable" placeholder="표 내용 3" id="table-td3">비전(Vision) 설정, 목표 구체화, 실행력, 학생회 연대감 형성</td>
+                        </tr>
+                        <tr>
+                            <th class="py-3.5 px-4 text-sm font-semibold text-slate-600 editable" placeholder="표 항목 4" id="table-th4">강의 특징</th>
+                            <td class="py-3.5 px-4 text-sm text-slate-800 editable" placeholder="표 내용 4" id="table-td4">
+                                100% 학생 참여형, 개별 손글씨/손그림 활동, 시각적인 결과물(키링 및 공동 작품) 도출
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Section: 세부 커리큘럼 -->
+        <section class="mb-12 print-page-break">
+            <div class="flex items-center gap-2 mb-6">
+                <span class="p-1.5 bg-indigo-100 rounded-lg text-indigo-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                        <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
+                    </svg>
+                </span>
+                <h2 class="text-xl font-bold text-slate-900 editable" placeholder="섹션 제목" id="section3-title">차시별 세부 커리큘럼</h2>
+            </div>
+
+            <div class="space-y-6">
+                <!-- 1차시 -->
+                <div class="flex flex-col md:flex-row gap-4 border-l-4 border-indigo-500 pl-4 md:pl-6 py-1">
+                    <div class="md:w-1/4">
+                        <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full editable" placeholder="차시 라벨 1" id="curriculum-tag1">1차시 (45분)</span>
+                        <h3 class="font-bold text-slate-900 mt-2 editable" placeholder="차시 제목 1" id="curriculum-title1">비전 탐색 및 계획</h3>
+                    </div>
+                    <div class="md:w-3/4 space-y-2">
+                        <div class="text-sm font-semibold text-slate-700 editable" placeholder="차시 주제 1" id="curriculum-sub1">리더의 나침반, 미래의 나를 디자인하기</div>
+                        <ul class="text-xs text-slate-600 space-y-1.5 list-disc list-inside">
+                            <li class="editable" placeholder="상세항목 1" id="curriculum-li1-1"><strong class="text-slate-800">[도입] 아이스브레이킹 (10분):</strong> 내가 꿈꾸는 멋진 나의 미래 모습 상상 및 방향 공유</li>
+                            <li class="editable" placeholder="상세항목 2" id="curriculum-li1-2"><strong class="text-slate-800">[전개] 나의 리더십 버킷리스트 (20분):</strong> 초등학교 시절과 미래를 아우르는 '개별 버킷리스트 5가지' 선정 및 작성</li>
+                            <li class="editable" placeholder="상세항목 3" id="curriculum-li1-3"><strong class="text-slate-800">[정리] 슈링클스 도안 설계 (15분):</strong> 슈링클스 용지 크기에 맞추어 직접 구상할 손글씨 문구와 상징 기호 스케치하기</li>
+                        </ul>
+                        <div class="text-[11px] text-slate-400 editable" placeholder="학습 가이드 1" id="curriculum-guide1">💡 학습 방법: 토의, 개별 활동지 작성 | 준비물: 버킷리스트 활동지, 연필</div>
+                    </div>
+                </div>
+
+                <!-- 2차시 -->
+                <div class="flex flex-col md:flex-row gap-4 border-l-4 border-orange-400 pl-4 md:pl-6 py-1">
+                    <div class="md:w-1/4">
+                        <span class="text-xs font-bold text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full editable" placeholder="차시 라벨 2" id="curriculum-tag2">2차시 (45분)</span>
+                        <h3 class="font-bold text-slate-900 mt-2 editable" placeholder="차시 제목 2" id="curriculum-title2">비전 키링 제작</h3>
+                    </div>
+                    <div class="md:w-3/4 space-y-2">
+                        <div class="text-sm font-semibold text-slate-700 editable" placeholder="차시 주제 2" id="curriculum-sub2">마술 종이에 담아내는 나의 손글씨 꿈</div>
+                        <ul class="text-xs text-slate-600 space-y-1.5 list-disc list-inside">
+                            <li class="editable" placeholder="상세항목 1" id="curriculum-li2-1"><strong class="text-slate-800">[도입] 제작 가이드 (5분):</strong> 슈링클스 재질 이해, 선명한 발색을 위한 채색/커팅 방법 설명</li>
+                            <li class="editable" placeholder="상세항목 2" id="curriculum-li2-2"><strong class="text-slate-800">[전개] 손그림&손글씨 (25분):</strong> 나만의 문구(캘리그라피)를 슈링클스에 정성껏 적고 가위로 다듬기</li>
+                            <li class="editable" placeholder="상세항목 3" id="curriculum-li2-3"><strong class="text-slate-800">[정리] 압축 세레머니 (15분):</strong> 펀치 타공 후 오븐/히트툴로 구우며 "작고 단단하게 완성되는 나의 꿈" 확인하기</li>
+                        </ul>
+                        <div class="text-[11px] text-slate-400 editable" placeholder="학습 가이드 2" id="curriculum-guide2">💡 학습 방법: 미술/공예 표현, 관찰 학습 | 준비물: 슈링클스지, 채색도구, 오븐, 히트툴, 가위</div>
+                    </div>
+                </div>
+
+                <!-- 3차시 -->
+                <div class="flex flex-col md:flex-row gap-4 border-l-4 border-emerald-500 pl-4 md:pl-6 py-1">
+                    <div class="md:w-1/4">
+                        <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full editable" placeholder="차시 라벨 3" id="curriculum-tag3">3차시 (45분)</span>
+                        <h3 class="font-bold text-slate-900 mt-2 editable" placeholder="차시 제목 3" id="curriculum-title3">공유 및 선포</h3>
+                    </div>
+                    <div class="md:w-3/4 space-y-2">
+                        <div class="text-sm font-semibold text-slate-700 editable" placeholder="차시 주제 3" id="curriculum-sub3">비전 선포 및 학생회 협동 액자 만들기</div>
+                        <ul class="text-xs text-slate-600 space-y-1.5 list-disc list-inside">
+                            <li class="editable" placeholder="상세항목 1" id="curriculum-li3-1"><strong class="text-slate-800">[도입] 키링 조립 (10분):</strong> 견고하게 구워진 비전 조각에 키링 부속(D링, O링) 달기</li>
+                            <li class="editable" placeholder="상세항목 2" id="curriculum-li3-2"><strong class="text-slate-800">[전개] 비전 공유회 (25분):</strong> 완성된 키링과 5가지 버킷리스트 활동지 전시 및 학생회 연대용 비전 트리 완성하기</li>
+                            <li class="editable" placeholder="상세항목 3" id="curriculum-li3-3"><strong class="text-slate-800">[정리] 다짐 선포 (10분):</strong> 가방에 키링을 걸고 소감을 나누며 학생회 대표 리더 선언문 낭독</li>
+                        </ul>
+                        <div class="text-[11px] text-slate-400 editable" placeholder="학습 가이드 3" id="curriculum-guide3">💡 학습 방법: 갤러리 워크, 협동 작업 | 준비물: O링, 펜치, 공동 비전 트리 보드판, 응원 스티커</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: 교구재 및 기대효과 -->
+        <section class="mb-12 print-page-break">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- 기대 효과 -->
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <span class="p-1.5 bg-indigo-100 rounded-lg text-indigo-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                            </svg>
+                        </span>
+                        <h2 class="text-lg font-bold text-slate-900 editable" placeholder="섹션 제목" id="effects-section-title">기대 효과</h2>
+                    </div>
+                    <ul class="space-y-2 text-xs text-slate-600">
+                        <li class="flex items-start gap-2 editable" placeholder="효과 1" id="effect-li1">
+                            <span class="text-indigo-600 font-bold">✓</span>
+                            <span><strong>자기주도적 목표 설정:</strong> 막연한 진로나 미래를 5가지 행동형 버킷리스트로 세분화하며 목표 지향성을 갖춤</span>
+                        </li>
+                        <li class="flex items-start gap-2 editable" placeholder="효과 2" id="effect-li2">
+                            <span class="text-indigo-600 font-bold">✓</span>
+                            <span><strong>예술적 성취감 및 긍정적 자존감:</strong> 본인의 독창적인 손글씨와 손그림이 견고한 굿즈로 바뀌는 과정을 보며 자신감 획득</span>
+                        </li>
+                        <li class="flex items-start gap-2 editable" placeholder="효과 3" id="effect-li3">
+                            <span class="text-indigo-600 font-bold">✓</span>
+                            <span><strong>학생회 공동체 연대 형성:</strong> 서로의 버킷리스트를 경청하고 응원하며, 소통 중심의 협동 리더십 구축</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 준비물 분류 -->
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <span class="p-1.5 bg-indigo-100 rounded-lg text-indigo-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4a2 2 0 012 2v2h3a1 1 0 110 2h-3v9a1 1 0 01-1 1H7a1 1 0 01-1-1V8H3a1 1 0 110-2h3V4zm2 2h4V4H6v2z" clip-rule="evenodd" />
+                            </svg>
+                        </span>
+                        <h2 class="text-lg font-bold text-slate-900 editable" placeholder="섹션 제목" id="materials-section-title">교구재 리스트</h2>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-xl space-y-3 border border-slate-100 text-xs">
+                        <div class="editable" placeholder="강비 준비물 세부내용" id="materials-teacher">
+                            <span class="font-bold text-slate-700">📌 강사 준비물:</span>
+                            <span class="text-slate-600">슈링클스 특수지, 채색도구 일체(포스카, 전용색연필), 가열용 오븐 및 히트툴, 리더십 5대 버킷리스트 전용 활동지, 키링 부자재(O링, 체인), 평펜치, 완성 보드판</span>
+                        </div>
+                        <div class="editable" placeholder="학교 협조 사항 세부내용" id="materials-school">
+                            <span class="font-bold text-slate-700">🏫 학교 협조 사항:</span>
+                            <span class="text-slate-600">빔 프로젝터, 학생용 가위(필기구통), 멀티탭, 수업 공간(가열 작업이 원활한 교실 혹은 동아리실)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer / Contact Information -->
+        <footer class="mt-12 pt-8 border-t border-slate-200">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4 text-center sm:text-left">
+                <div>
+                    <p class="text-sm font-semibold text-slate-800 editable" placeholder="소속 연구소/기관명" id="footer-institute">미래를 여는 초등 리더십 연구소</p>
+                    <p class="text-xs text-slate-400 mt-1 editable" placeholder="슬로건 또는 서브 메시지" id="footer-slogan">교육과 공예를 결합한 최고의 참여형 커리큘럼을 약속드립니다.</p>
+                </div>
+                <div class="text-xs text-slate-500 bg-slate-50 px-4 py-2.5 rounded-lg border border-slate-100 w-full sm:w-auto text-left">
+                    <p class="editable" placeholder="강사명" id="footer-name">🧑‍🏫 강사명 : (이름을 입력하세요)</p>
+                    <p class="mt-1 editable" placeholder="연락처" id="footer-contact">📞 연락처 : (연락처를 입력하세요)</p>
+                </div>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- Custom Tailored Reset Modal (Replaces unsafe confirm()) -->
+    <div id="reset-modal" class="no-print fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm hidden transition-all">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 transform transition-all duration-300 scale-95 opacity-0" id="reset-modal-card">
+            <div class="flex items-center justify-center w-12 h-12 mx-auto bg-rose-50 rounded-full mb-4">
+                <span class="text-xl text-rose-600">⚠️</span>
+            </div>
+            <h3 class="text-center text-lg font-bold text-slate-900 mb-2">원래 양식으로 되돌릴까요?</h3>
+            <p class="text-center text-xs text-slate-500 leading-relaxed mb-6">
+                지금까지 수정하신 모든 텍스트가 삭제되고 처음 작성된 오리지널 교육제안서 템플릿의 내용으로 되돌아가게 됩니다.
+            </p>
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="hideResetModal()" class="w-full py-2.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">
+                    취소
+                </button>
+                <button onclick="confirmReset()" class="w-full py-2.5 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition-all">
+                    원래대로 복원
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Document Controller & Persistence Script -->
+    <script>
+        let isEditMode = true; // Set default view mode to Edit Mode for easier onboarding
+
+        // DOM elements cache
+        const editableElements = document.querySelectorAll('.editable');
+        const btnToggleEdit = document.getElementById('btn-toggle-edit');
+        const editIcon = document.getElementById('edit-icon');
+        const editText = document.getElementById('edit-text');
+        const editTutorial = document.getElementById('edit-tutorial');
+        const saveStatus = document.getElementById('save-status');
+
+        // Original default fallback texts in case localstorage is cleared
+        const defaultDocumentTexts = {};
+
+        // On document fully loaded
+        window.onload = function() {
+            // First, cache the initial default layout values in memory
+            editableElements.forEach(el => {
+                defaultDocumentTexts[el.id] = el.innerHTML;
+            });
+
+            // Load saved contents from localStorage if available
+            loadDocumentData();
+
+            // Set up auto-saving listener on each editable field
+            editableElements.forEach(el => {
+                el.addEventListener('input', () => {
+                    saveDocumentData();
+                });
+            });
+
+            // Force initial display state matching isEditMode
+            applyModeState();
+        };
+
+        // Turn editing functionality ON or OFF visually and structurally
+        function toggleEditMode() {
+            isEditMode = !isEditMode;
+            applyModeState();
+        }
+
+        // Apply visual classes and contentEditable settings
+        function applyModeState() {
+            editableElements.forEach(el => {
+                if (isEditMode) {
+                    el.setAttribute('contenteditable', 'true');
+                    el.classList.add('editable-active');
+                } else {
+                    el.setAttribute('contenteditable', 'false');
+                    el.classList.remove('editable-active');
+                    // Trim empty content back to design defaults
+                    if (el.innerText.trim() === '') {
+                        el.innerHTML = defaultDocumentTexts[el.id] || '&nbsp;';
+                    }
+                }
+            });
+
+            if (isEditMode) {
+                editIcon.innerText = '👁️';
+                editText.innerText = '미리보기 모드';
+                editTutorial.classList.remove('hidden');
+                btnToggleEdit.className = "bg-slate-800 hover:bg-slate-700 text-white font-medium text-xs py-2 px-3.5 rounded-lg shadow-sm transition-all flex items-center gap-1.5";
+            } else {
+                editIcon.innerText = '✏️';
+                editText.innerText = '편집 모드 시작';
+                editTutorial.classList.add('hidden');
+                btnToggleEdit.className = "bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold text-xs py-2 px-3.5 rounded-lg transition-all flex items-center gap-1.5";
+            }
+        }
+
+        // Save state to browser storage
+        function saveDocumentData() {
+            const documentData = {};
+            editableElements.forEach(el => {
+                documentData[el.id] = el.innerHTML;
+            });
+            localStorage.setItem('lecture_proposal_edits_v1', JSON.stringify(documentData));
+            
+            // Show auto-saved micro-feedback
+            saveStatus.innerText = "변경사항 자동 저장 완료";
+            saveStatus.classList.remove('text-slate-500');
+            saveStatus.classList.add('text-indigo-600');
+            setTimeout(() => {
+                saveStatus.innerText = "자동 저장 활성화됨";
+                saveStatus.classList.remove('text-indigo-600');
+                saveStatus.classList.add('text-slate-500');
+            }, 1500);
+        }
+
+        // Load state from browser storage
+        function loadDocumentData() {
+            const rawSavedData = localStorage.getItem('lecture_proposal_edits_v1');
+            if (rawSavedData) {
+                try {
+                    const parsedData = JSON.parse(rawSavedData);
+                    Object.keys(parsedData).forEach(id => {
+                        const targetEl = document.getElementById(id);
+                        if (targetEl) {
+                            targetEl.innerHTML = parsedData[id];
+                        }
+                    });
+                } catch (e) {
+                    console.error("저장된 버전을 복구할 수 없습니다.", e);
+                }
+            }
+        }
+
+        // Safe custom confirmation modal toggle
+        function showResetModal() {
+            const modal = document.getElementById('reset-modal');
+            const card = document.getElementById('reset-modal-card');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                card.classList.remove('scale-95', 'opacity-0');
+                card.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function hideResetModal() {
+            const modal = document.getElementById('reset-modal');
+            const card = document.getElementById('reset-modal-card');
+            card.classList.remove('scale-100', 'opacity-100');
+            card.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        // Complete reset back to initial templates
+        function confirmReset() {
+            localStorage.removeItem('lecture_proposal_edits_v1');
+            editableElements.forEach(el => {
+                if (defaultDocumentTexts[el.id] !== undefined) {
+                    el.innerHTML = defaultDocumentTexts[el.id];
+                }
+            });
+            hideResetModal();
+            
+            // Soft success visual feedback
+            saveStatus.innerText = "초기 값으로 복원 완료";
+            saveStatus.classList.add('text-rose-500');
+            setTimeout(() => {
+                saveStatus.innerText = "자동 저장 활성화됨";
+                saveStatus.classList.remove('text-rose-500');
+            }, 2000);
+        }
+
+        // Trigger PDF saving / OS Native printing
+        function triggerPrint() {
+            // Force preview mode before printing so borders are guaranteed to stay hidden
+            const previousMode = isEditMode;
+            if (isEditMode) {
+                isEditMode = false;
+                applyModeState();
+            }
+            
+            // Allow layout engine a fraction of a millisecond to render final preview styles before calling print
+            setTimeout(() => {
+                window.print();
+                // Optionally restore their editing mode when they close the OS print dialog
+                if (previousMode) {
+                    isEditMode = true;
+                    applyModeState();
+                }
+            }, 150);
+        }
+    </script>
+</body>
+</html>
+```
+eof
