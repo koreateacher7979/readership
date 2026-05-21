@@ -14,6 +14,15 @@
       font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
     }
     
+    /* 100% 화면 및 PDF 출력을 보장하는 안전한 그라데이션 텍스트 스타일 */
+    .gradient-text {
+      color: #4f46e5; /* 그라데이션을 지원하지 않거나 인쇄 시 투명 처리가 불발될 때의 안전한 폴백(기본색) */
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
     /* 편집 모드 활성화 시 스타일 */
     .edit-mode-active .editable-text {
       outline: 1px dashed #6366f1;
@@ -31,24 +40,40 @@
       outline-offset: 2px;
     }
 
+    /* 100% 똑같은 인쇄/PDF 품질을 위한 핵심 프린트 미디어 쿼리 */
     @media print {
+      body {
+        background-color: #f8fafc !important;
+        color: #1e293b !important;
+        /* 브라우저가 배경 그래픽, 그라데이션, 그림자를 지우지 못하게 강제 설정 */
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
       .no-print {
         display: none !important;
       }
       .print-page-break {
         page-break-before: always;
       }
-      body {
-        background-color: white !important;
-        color: black !important;
-      }
       .shadow-custom {
-        box-shadow: none !important;
+        /* 인쇄물에서도 유려한 입체감을 나타내는 그림자 보존 */
+        box-shadow: 0 10px 30px -10px rgba(79, 70, 229, 0.12) !important;
       }
-      /* 인쇄 시에는 편집 아웃라인 무조건 제거 */
+      /* 인쇄 시 점선 아웃라인 강제 제거 */
       .editable-text {
         outline: none !important;
         background-color: transparent !important;
+      }
+      /* 카드 엘리먼트들이 인쇄 시 반으로 갈라져 잘리는 현상 방지 */
+      section, .bg-white, header {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      /* 그라데이션 텍스트가 인쇄 시 투명하게 유실되는 브라우저 예외 보강 */
+      .gradient-text {
+        -webkit-text-fill-color: #4f46e5 !important;
+        color: #4f46e5 !important;
+        background: none !important;
       }
     }
     .shadow-custom {
@@ -83,7 +108,7 @@
         </button>
         
         <!-- Print / PDF -->
-        <button onclick="prepareAndPrint()" class="bg-emerald-500 hover:bg-emerald-600 transition text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm">
+        <button onclick="prepareAndPrint()" class="bg-emerald-500 hover:bg-emerald-600 transition text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm animate-pulse">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="2 2 20 20" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
           </svg>
@@ -114,7 +139,7 @@
           💻 AI 에듀테크 융합형 학생자치 캠프
         </div>
         <h1 class="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 leading-tight">
-          <span class="editable-text block mb-1" data-field="title-part1">AI <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600">바이브코딩</span>으로 배우는</span>
+          <span class="editable-text block mb-1" data-field="title-part1">AI <span class="gradient-text font-black">바이브코딩</span>으로 배우는</span>
           <span class="text-slate-800 editable-text" data-field="title-part2">학생회 소통 리더십</span>
         </h1>
         <p class="mt-4 text-base sm:text-lg text-slate-600 font-medium max-w-2xl leading-relaxed">
@@ -267,7 +292,7 @@
         </p>
       </div>
 
-      <!-- Simulator Device Frame (Form elements stay non-editable in the core sense, only text headers are editable) -->
+      <!-- Simulator Device Frame -->
       <div class="mt-8 mx-auto max-w-sm bg-slate-900 border-[6px] border-slate-700 rounded-[2.5rem] shadow-2xl p-4 relative">
         <!-- Ear Speaker Indicator -->
         <div class="absolute top-1 left-1/2 -translate-x-1/2 w-20 h-4 bg-slate-700 rounded-full"></div>
@@ -333,7 +358,7 @@
     </section>
 
     <!-- 6. SPEAKER & AGENCY INFO -->
-    <section class="bg-white border border-indigo-50 shadow-custom rounded-3xl p-6 sm:p-10">
+    <section class="bg-white border border-indigo-50 shadow-custom rounded-3xl p-6 sm:p-10 mb-10">
       <div class="grid md:grid-cols-3 gap-8 items-center">
         <!-- Profile Pic -->
         <div class="flex flex-col items-center text-center md:border-r md:border-slate-100 md:pr-8">
@@ -534,6 +559,7 @@
       }
     }
 
+    // Submit Simulation
     function submitSim() {
       const content = document.getElementById('simContent').value.trim();
       if (!content) {
